@@ -1,2 +1,4 @@
 .idea/
 manage.py
+db.sqlite3
+products/migrations
