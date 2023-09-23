@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 class LessonModelViewSet(ModelViewSet):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user = self.request.user
@@ -23,7 +23,8 @@ class LessonModelViewSet(ModelViewSet):
 
         for lesson in serializer.data:
             lesson['user'] = str(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).user)
-            lesson['time_view'] = int(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).view_time)
+            lesson['time_view'] = int(
+                LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).view_time)
             lesson['status'] = str(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).viewed)
 
         return Response(serializer.data)
@@ -42,10 +43,21 @@ class ProductsViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         for product in serializer.data:
             for lesson in product['lesson']:
+                lesson['user'] = self.request.user.username
                 lesson['view_time'] = LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).view_time
                 lesson['status'] = str(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).viewed)
                 lesson['last_viewed'] = now().date()
 
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        queryset = self.queryset.get(id=kwargs['pk'])
+        serializer = self.get_serializer(queryset)
+        for lesson in serializer.data['lesson']:
+            lesson['user'] = self.request.user.username
+            lesson['view_time'] = LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).view_time
+            lesson['status'] = str(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).viewed)
+            lesson['last_viewed'] = now().date()
         return Response(serializer.data)
 
 
@@ -67,9 +79,3 @@ class AllProductsViewSet(ModelViewSet):
             product['total_students'] = Access.objects.filter(product_id=product['id']).count()
             product['demand'] = float((product['total_students'] / User.objects.all().count()) * 100)
         return Response(serializer.data)
-
-
-
-
-
-
