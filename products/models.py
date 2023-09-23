@@ -4,6 +4,7 @@ from moviepy.editor import VideoFileClip
 
 
 class Lesson(models.Model):
+    """Модель урока"""
     name = models.CharField(max_length=255)
     video_link = models.CharField(max_length=2048)
     duration = models.IntegerField(default=0)
@@ -14,8 +15,10 @@ class Lesson(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
+        # Функция вызывается для автоматического проставления поля duration
         self.set_duration()
 
+    # Функция для добавления продолжительности видео
     def set_duration(self):
         try:
             clip = VideoFileClip(self.video_link)
@@ -27,6 +30,7 @@ class Lesson(models.Model):
 
 
 class LessonViewer(models.Model):
+    """Модель студента для урока с доп. информацией"""
     VIEWED = 'Просмотрено'
     NOT_VIEWED = 'Не просмотрено'
     STATUSES = (
@@ -48,6 +52,7 @@ class LessonViewer(models.Model):
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
         self.check_viewed()
 
+    # Функция для проверки времени просмотра ролика
     def check_viewed(self):
         if self.view_time >= self.lesson.duration * 0.8:
             self.viewed = self.VIEWED
@@ -55,6 +60,7 @@ class LessonViewer(models.Model):
 
 
 class Product(models.Model):
+    """Модель продукта"""
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     lesson = models.ManyToManyField(Lesson, related_name='lessons')
 
@@ -65,15 +71,21 @@ class Product(models.Model):
             self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
+
+        # Проходим по всем студентам у которых есть доступ
         for us in self.access.all():
             user = us.user
+            # Проходим по всем урока на продукте
             for lesson in self.lesson.all():
+                # Получаем студента урока
                 viewer = LessonViewer.objects.get(user=user, lesson=lesson)
+                # Если его нет, то создаем
                 if not viewer:
                     LessonViewer.objects.create(user=user, lesson=lesson)
 
 
 class Access(models.Model):
+    """Модель доступа студента к продукту"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='access')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='access')
 
@@ -84,5 +96,6 @@ class Access(models.Model):
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
+        # При получении доступа к уроку, создаем модели студента
         for lesson in self.product.lesson.all():
             LessonViewer.objects.create(user=self.user, lesson=lesson)

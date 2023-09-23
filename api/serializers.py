@@ -3,6 +3,7 @@ from products import models
 
 
 class LessonSerializer(serializers.ModelSerializer):
+    """Сериализатор урока"""
 
     class Meta:
         model = models.Lesson
@@ -10,6 +11,7 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    """Сериализатор продукта"""
     owner = serializers.SlugRelatedField(slug_field='username', read_only=True)
     lesson = LessonSerializer(many=True)
 

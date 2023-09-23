@@ -14,6 +14,7 @@ class LessonModelViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Вывод уроков для конкретного пользователя
         queryset = Lesson.objects.filter(lessons__access__user=user)
         return queryset
 
@@ -21,6 +22,7 @@ class LessonModelViewSet(ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
+        # Добавление дополнительной информации по уроку
         for lesson in serializer.data:
             lesson['user'] = str(LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).user)
             lesson['time_view'] = int(
@@ -36,11 +38,14 @@ class ProductsViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Вывод всех продуктов к которым пользователь имеет доступ
         return self.queryset.filter(access__user=user)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
+
+        # Добавление дополнительной информации по урокам продукта для конкретного пользователя
         for product in serializer.data:
             for lesson in product['lesson']:
                 lesson['user'] = self.request.user.username
@@ -53,6 +58,7 @@ class ProductsViewSet(ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         queryset = self.queryset.get(id=kwargs['pk'])
         serializer = self.get_serializer(queryset)
+        # Добавление дополнительной информации по урокам для конкретного продукта по его id
         for lesson in serializer.data['lesson']:
             lesson['user'] = self.request.user.username
             lesson['view_time'] = LessonViewer.objects.get(user=self.request.user, lesson_id=lesson['id']).view_time
@@ -65,6 +71,7 @@ class AllProductsViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
+    # Вывод всех продуктов на платформе с дополнительной информацией
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
